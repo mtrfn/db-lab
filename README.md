@@ -1,3 +1,9 @@
+# DB-Lab V1.1.1 — corecție încărcare fișiere
+
+Fișierele CSS, JavaScript și Worker folosesc acum adrese cu versiune pentru a evita reutilizarea copiilor V1.0 din cache. Datele și formatul proiectului rămân neschimbate.
+
+Încarcă întregul conținut al folderului db-lab peste fișierele existente, inclusiv row-editor.js și worker.js. Așteaptă publicarea, închide dialogul vechi cu Anulează și apasă Ctrl + F5. Antetul trebuie să afișeze V1.1.1. Nu este necesară ștergerea datelor browserului.
+
 # DB-Lab V1.1
 
 Laborator educațional SQLite în limba română, care rulează integral în browser, fără server de aplicație sau CDN. Include motorul sql.js și fișierul WASM local.

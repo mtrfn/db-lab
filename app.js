@@ -2,7 +2,7 @@
 const $=id=>document.getElementById(id),q=x=>'"'+String(x).replaceAll('"','""')+'"';
 let worker,state=[],bytes,selected='',pending=null,serial=0,storage,saveQueue=Promise.resolve(),timer;
 function msg(s){$('message').textContent=s}
-function spawn(){worker=new Worker('./worker.js');worker.onmessage=e=>{if(!pending||pending.id!==e.data.id)return;const p=pending;pending=null;clearTimeout(timer);busy(false);e.data.error?p.reject(Error(e.data.error)):p.resolve(e.data)};worker.onerror=e=>{if(pending){pending.reject(Error(e.message));pending=null;busy(false)}}}
+function spawn(){worker=new Worker('./worker.js?v=1.1.1');worker.onmessage=e=>{if(!pending||pending.id!==e.data.id)return;const p=pending;pending=null;clearTimeout(timer);busy(false);e.data.error?p.reject(Error(e.data.error)):p.resolve(e.data)};worker.onerror=e=>{if(pending){pending.reject(Error(e.message));pending=null;busy(false)}}}
 function busy(b){document.querySelectorAll('button').forEach(x=>x.disabled=b&&x.id!=='stop')}
 function call(m){if(pending)return Promise.reject(Error('Așteaptă finalizarea operației.'));busy(true);return new Promise((resolve,reject)=>{pending={id:++serial,resolve,reject};worker.postMessage({...m,id:serial});timer=setTimeout(()=>stop('Interogarea a depășit 15 secunde. Starea anterioară a fost restaurată.'),15000)})}
 function current(){return state.find(t=>t.name===selected)}
