@@ -22,9 +22,9 @@ const LessonCore = (() => {
   }
   function metadata(x){
     if(x==null)return null;
-    if(!object(x)||typeof x.key!=='string'||!(/^(builtin|local):[a-zA-Z0-9_-]{1,80}$/).test(x.key))throw Error('Datele lecției din proiect sunt invalide.');
+    if(!object(x)||typeof x.key!=='string'||!(/^(?:(?:builtin|local):|class:[a-f0-9-]{36}:[a-f0-9-]{36}:)[a-zA-Z0-9_-]{1,80}$/i).test(x.key))throw Error('Datele lecției din proiect sunt invalide.');
     const definition=lesson(x.definition);
-    if(x.key.split(':')[1]!==definition.id)throw Error('Identificator de proiect / lecție incompatibil.');
+    if(x.key.split(':').at(-1)!==definition.id)throw Error('Identificator de proiect / lecție incompatibil.');
     return {key:x.key,definition,hintsUsed:Number.isInteger(x.hintsUsed)&&x.hintsUsed>=0&&x.hintsUsed<=3?x.hintsUsed:0};
   }
   function project(x){

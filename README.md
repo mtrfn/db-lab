@@ -1,4 +1,4 @@
-# DB-Lab V1.2.0 — Lecții SQL și atelier local
+# DB-Lab V1.3.0 — Lecții SQL și atelier local
 
 ## Ce include
 
@@ -18,7 +18,7 @@
 2. Dezarhivează pachetul. Încarcă **tot conținutul** folderului `db-lab` în rădăcina publicată a repository-ului. Nu adăuga un nivel suplimentar `db-lab` peste cel existent.
 3. Include fișierele noi `lesson-core.js`, `lessons.js` și `lessons.json`, împreună cu toate fișierele existente și folderul `vendor`.
 4. Confirmă modificările în GitHub și așteaptă publicarea Pages.
-5. Reîncarcă pagina cu Ctrl + F5. Antetul trebuie să arate **V1.2.0**.
+5. Reîncarcă pagina cu Ctrl + F5. Antetul trebuie să arate **V1.3.0**.
 
 Căile sunt relative și fișierele interfeței / Worker au versiune în adresă pentru evitarea copiilor vechi din cache. Nu este necesară compilarea sau instalarea de pachete. Motorul SQLite este inclus local. Pentru această versiune nu este necesară găzduire în Azure.
 
@@ -59,11 +59,17 @@ Importul combină bibliotecile după id: lecțiile noi sunt adăugate, cele cu a
 
 Dacă salvarea proiectului eșuează, schimbarea lecției este oprită. Dacă biblioteca locală nu poate fi citită/validată, aplicația nu o suprascrie automat. Exportă periodic: stocarea browserului este locală și poate fi eliminată prin ștergerea datelor site-ului.
 
-## Limita dintre V1.2 și Teams
+## Microsoft Teams și SharePoint — V1.3
 
-**V1.2 este o versiune locală, pregătitoare.** Atelierul este disponibil tuturor utilizatorilor care deschid aplicația. Nu pretinde că verifică identitatea sau rolul de profesor.
+Deschide **CONFIGURARE-TEAMS.html** de pe site pentru ghid și generatorul pachetului Teams. Sunt necesare o înregistrare Entra separată, Client ID, Tenant ID, aprobarea permisiunilor delegate și instalarea aplicației conform politicilor școlii. Configurația livrată este goală intenționat. Nicio parolă sau secret nu se introduce în site.
 
-Nu sunt implementate în această versiune: conectare Microsoft, roluri confirmate pentru clasa Teams, citirea din SharePoint, sincronizare între dispozitive, predare Teams sau evaluare automată. Următoarea integrare va adapta modelul HTML-Lab, cu un spațiu DB-Lab separat și permisiuni verificate de Microsoft 365.
+În canalul standard al unei clase educaționale, aplicația verifică profilul, organizația și apartenența prin Microsoft Graph. Atelierul apare profesorilor confirmați pentru acea clasă. Biblioteca centrală se citește din `DB-Lab/lectii.json` din rădăcina bibliotecii implicite SharePoint. Publicarea este manuală, prin export și încărcare în SharePoint. Permisiunile SharePoint trebuie configurate pentru citire la elevi și editare la profesori; interfața nu este o barieră de securitate.
+
+Progresul rămâne local, separat după organizație, cont și clasă; tokenurile aplicației sunt în memorie. Datele nu sunt criptate față de alte persoane cu acces la același profil de browser. Modul local păstrează cheile V1.2 și nu mută automat proiectele în spațiul Teams. Folosește Export/Import pentru transfer.
+
+Exportul proiectelor rămâne format V1. Datele și SQL-ul se pot deschide în V1.0. Contextul nou de lecție SharePoint necesită V1.3; V1.2 nu înțelege identificatorul clasei din metadatele unui astfel de export. Proiectele V1.0–V1.2 se importă în V1.3.
+
+Nu sunt incluse sincronizarea proiectelor, predarea Teams și evaluarea. Testele Microsoft folosesc răspunsuri simulate; conectarea reală, acordul administratorului și accesul SharePoint trebuie verificate în organizația școlii. Fișierele privacy.html și terms.html descriu comportamentul aplicației și se completează cu informațiile instituției înainte de distribuire.
 
 ## Limite tehnice și verificări
 
@@ -79,6 +85,7 @@ Teste cu Node.js, din acest folder:
 node test-worker.cjs
 node test-v11.cjs
 node test-v12.cjs
+node test-v13.cjs
 ```
 
-Scenariile verificate sunt în `TESTARE-V1.2.md`. Licența și versiunea motorului distribuit rămân în `vendor` și `VENDOR-VERSION.txt`.
+Verificările V1.3 sunt în `TESTARE-V1.3.md`; cele anterioare în `TESTARE-V1.2.md`. Licența și versiunea motorului distribuit rămân în `vendor` și `VENDOR-VERSION.txt`.

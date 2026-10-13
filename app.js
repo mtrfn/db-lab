@@ -1,9 +1,10 @@
 'use strict';
 const $=id=>document.getElementById(id),q=x=>'"'+String(x).replaceAll('"','""')+'"';
-let activeLesson=null;
+let activeLesson=null,workspaceScope=DBLabHost.embedded?null:'local';
+function storageKey(key,scope=workspaceScope){if(!scope)throw Error('Conectează-te înainte de a salva în Teams.');return scope==='local'?key:scope+'::'+key}
 let worker,state=[],bytes,selected='',pending=null,serial=0,storage,saveQueue=Promise.resolve(),timer;
 function msg(s){$('message').textContent=s}
-function spawn(){worker=new Worker('./worker.js?v=1.2.0');worker.onmessage=e=>{if(!pending||pending.id!==e.data.id)return;const p=pending;pending=null;clearTimeout(timer);busy(false);e.data.error?p.reject(Error(e.data.error)):p.resolve(e.data)};worker.onerror=e=>{if(pending){clearTimeout(timer);pending.reject(Error(e.message));pending=null;busy(false)}}}
+function spawn(){worker=new Worker('./worker.js?v=1.3.0');worker.onmessage=e=>{if(!pending||pending.id!==e.data.id)return;const p=pending;pending=null;clearTimeout(timer);busy(false);e.data.error?p.reject(Error(e.data.error)):p.resolve(e.data)};worker.onerror=e=>{if(pending){clearTimeout(timer);pending.reject(Error(e.message));pending=null;busy(false)}}}
 let busyDepth=0;
 function refreshBusyButtons(){if(!busyDepth)return;document.querySelectorAll('button,input,select,textarea').forEach(x=>{if(x.id==='stop')return;if(x.dataset.wasDisabled===undefined)x.dataset.wasDisabled=String(x.disabled);x.disabled=true})}
 function busy(b){busyDepth=Math.max(0,busyDepth+(b?1:-1));if(busyDepth){refreshBusyButtons();return}document.querySelectorAll('button,input,select,textarea').forEach(x=>{if(x.dataset.wasDisabled!==undefined){x.disabled=x.dataset.wasDisabled==='true';delete x.dataset.wasDisabled}})}
@@ -15,12 +16,12 @@ $('schema').append(table(['Câmp','Tip','PK','Obligatoriu','Referință'],t.colu
 const grid=table(t.data.columns,t.data.values),pk=t.columns.filter(c=>c.pk).sort((a,b)=>a.pk-b.pk);grid.tHead.rows[0].append(document.createElement('th'));t.data.values.forEach((v,i)=>{const cell=grid.tBodies[0].rows[i].insertCell();for(const [label,action]of [['Editează',()=>edit(v)],['Șterge',()=>remove(v)]]){const b=document.createElement('button');b.textContent=label;b.disabled=!pk.length||pk.some(c=>v[t.data.columns.indexOf(c.name)]===null)||v.some(x=>x instanceof Uint8Array);b.onclick=action;cell.append(b)}});$('grid').append(grid);refreshBusyButtons()}
 function projectSnapshot(){return {format:'DB-Lab',version:1,name:$('name').value,sql:$('editor').value,bytes:Array.from(bytes),...(activeLesson?{lesson:LessonCore.metadata(activeLesson)}:{})}}
 async function save(){
- if(!bytes)return false;
- const project=projectSnapshot();$('saved').textContent='Se salvează…';
+ if(!bytes||!workspaceScope)return false;
+ const scope=workspaceScope,project=projectSnapshot();$('saved').textContent='Se salvează…';
  saveQueue=saveQueue.catch(()=>{}).then(()=>new Promise((resolve,reject)=>{
   if(!storage)return reject(Error('Stocarea locală indisponibilă'));
   const tx=storage.transaction('projects','readwrite'),store=tx.objectStore('projects');
-  store.put(project,'active');store.put(project,activeLessonKey(project));
+  store.put(project,storageKey('active',scope));store.put(project,storageKey(activeLessonKey(project),scope));
   tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||Error('Salvare anulată'));
  }));
  try{await saveQueue;$('saved').textContent='Salvat local';return true}catch(e){$('saved').textContent='Nesalvat · folosește Export';msg(e.message);return false}
@@ -45,4 +46,23 @@ $('insert').onclick=()=>openRowEditor();
 function condition(t,v){const keys=t.columns.filter(c=>c.pk);return {sql:keys.map(c=>q(c.name)+' IS ?').join(' AND '),params:keys.map(c=>v[t.data.columns.indexOf(c.name)])}}
 function edit(v){openRowEditor(v)}
 function remove(v){const t=current();if(!confirm('Ștergi această înregistrare?'))return;const where=condition(t,v);apply('DELETE FROM '+q(t.name)+' WHERE '+where.sql,where.params)}
-window.dbReady=(async()=>{spawn();let saved;try{storage=await new Promise((resolve,reject)=>{const r=indexedDB.open('db-lab-v1',1);r.onupgradeneeded=()=>r.result.createObjectStore('projects');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)});saved=await new Promise((resolve,reject)=>{const r=storage.transaction('projects').objectStore('projects').get('active');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}catch(e){msg('Salvarea locală indisponibilă. Folosește Export.')}try{await load(saved?new Uint8Array(saved.bytes):undefined);if(saved){try{activeLesson=LessonCore.metadata(saved.lesson)}catch{activeLesson=null}window.renderActiveLesson?.();$('name').value=saved.name;$('editor').value=saved.sql;msg('Proiect restaurat.');await save()}else await apply(await(await fetch('./demo.sql')).text());return true}catch(e){msg('Inițializare eșuată: '+e.message);return false}})();
+window.dbReady=(async()=>{spawn();let saved;try{storage=await new Promise((resolve,reject)=>{const r=indexedDB.open('db-lab-v1',1);r.onupgradeneeded=()=>r.result.createObjectStore('projects');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)});if(workspaceScope)saved=await new Promise((resolve,reject)=>{const r=storage.transaction('projects').objectStore('projects').get(storageKey('active'));r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}catch(e){msg('Salvarea locală indisponibilă. Folosește Export.')}try{await load(saved?new Uint8Array(saved.bytes):undefined);if(saved){try{activeLesson=LessonCore.metadata(saved.lesson)}catch{activeLesson=null}window.renderActiveLesson?.();$('name').value=saved.name;$('editor').value=saved.sql;msg('Proiect restaurat.');await save()}else if(workspaceScope)await apply(await(await fetch('./demo.sql')).text());return true}catch(e){msg('Inițializare eșuată: '+e.message);return false}})();
+
+// Local workspaces are isolated by verified organization, account and Teams class.
+window.DBLabWorkspace={
+ async flush(){clearTimeout(debounce);return !workspaceScope||!bytes||await save()},
+ async lock(){
+  await window.dbReady;clearTimeout(debounce);
+  if(workspaceScope&&bytes)await save();await saveQueue.catch(()=>{});
+  workspaceScope=null;activeLesson=null;if($('rowDialog').open)$('rowDialog').close();$('rowFields').replaceChildren();$('rowReferences').replaceChildren();await load();$('name').value='';$('editor').value='';$('results').replaceChildren();window.renderActiveLesson?.();
+ },
+ async open(scope){
+  await window.dbReady;clearTimeout(debounce);await saveQueue.catch(()=>{});
+  workspaceScope=scope;
+  const saved=await new Promise((resolve,reject)=>{if(!storage)return reject(Error('Stocarea locală este indisponibilă.'));const r=storage.transaction('projects').objectStore('projects').get(storageKey('active'));r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)});
+  const p=saved?LessonCore.project(saved):null;
+  await load(p?new Uint8Array(p.bytes):undefined);activeLesson=p?.lesson||null;
+  $('name').value=p?.name||'Proiectul meu';$('editor').value=p?.sql||'SELECT * FROM elevi;';$('results').replaceChildren();window.renderActiveLesson?.();
+  if(!p){const r=await fetch('./demo.sql');if(!r.ok)throw Error('Catalogul inițial nu poate fi încărcat.');if(!(await apply(await r.text())))throw Error('Catalogul inițial nu poate fi creat.')}else await save();
+ }
+};
