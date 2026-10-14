@@ -1,3 +1,7 @@
+# DB-Lab V1.5.0
+
+Nou: fila Teme Teams — atașare proiect și predare cu confirmare Microsoft. Citește ACTUALIZARE-V1.5.md înainte de instalare: sunt necesare două permisiuni delegate suplimentare în Entra.
+
 # DB-Lab V1.4.0
 
 Nou: fila Diagramă ERD. Pentru actualizare și limite citește ACTUALIZARE-V1.4.md.

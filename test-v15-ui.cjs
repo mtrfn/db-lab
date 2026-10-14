@@ -1,0 +1,19 @@
+'use strict';
+const assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs'),C=require('./assignments-core.js'),{server,team,user}=require('./test-v15.cjs');
+class Element{constructor(){this.disabled=false;this.value='';this.textContent='';this.children=[];this.classList={toggle(){}}}replaceChildren(){this.children=[];this.value=''}append(x){this.children.push(x)}add(x){this.children.push(x)}}
+function fixture(){const elements=Object.fromEntries([...fs.readFileSync('index.html','utf8').matchAll(/id="([^"]+)"/g)].map(m=>[m[1],new Element()]));const x=server();let project={format:'DB-Lab',version:1,name:'Proiect',sql:'SELECT 1;',bytes:[1,2,3]};const c={AssignmentsCore:C,document:{getElementById:id=>{assert(elements[id],'Missing UI element '+id);return elements[id]},createElement:()=>new Element()},Option:class{constructor(text,value){this.text=text;this.value=value}},DBLabWorkspace:{snapshot:()=>structuredClone(project)},AbortController,setTimeout,clearTimeout,URL,confirm:()=>true,fetch:()=>{throw Error('Unused')}};c.window=c;vm.runInNewContext(fs.readFileSync('assignments.js','utf8'),c);return {elements,x,c,setProject:p=>project=p,connect:teacher=>c.DBLabAssignments.connect({teamId:team,userId:user,teacher,getToken:async()=>'token'})}}
+(async()=>{
+ const f=fixture(),e=f.elements;
+ // Replace only transport; UI logic and assignment operations use real core functions.
+ f.c.AssignmentsCore={...C,client:()=>f.x.api};
+ // Re-evaluate to capture the fixture's transport.
+ vm.runInNewContext(fs.readFileSync('assignments.js','utf8'),f.c);
+ assert(e.refreshAssignments.disabled);f.connect(false);assert(!e.refreshAssignments.disabled);
+ await e.refreshAssignments.onclick();e.assignmentPicker.value='a1';await e.assignmentPicker.onchange();assert(!e.attachAssignment.disabled);assert(e.submitAssignment.disabled);
+ await e.attachAssignment.onclick();assert(!e.submitAssignment.disabled);assert.match(e.assignmentMessage.textContent,/nu este încă predată/);assert.equal(f.x.s.status,'working');
+ f.setProject({format:'DB-Lab',version:1,name:'Changed',sql:'SELECT 2;',bytes:[1,2,3]});await e.submitAssignment.onclick();assert.match(e.assignmentMessage.textContent,/diferă/);assert.equal(f.x.s.status,'working');
+ f.setProject({format:'DB-Lab',version:1,name:'Proiect',sql:'SELECT 1;',bytes:[1,2,3]});f.x.loseSubmit=true;await e.submitAssignment.onclick();assert(!e.assignmentMessage.textContent.includes('Lucrarea a fost predată!'));assert.equal(f.x.s.status,'submitted');await e.refreshSubmission.onclick();assert.equal(e.assignmentState.textContent,'Predată');assert(e.submitAssignment.disabled);assert(e.attachAssignment.disabled);
+ f.c.DBLabAssignments.disconnect();assert(e.assignmentPicker.disabled);assert.equal(e.assignmentFiles.children.length,0);assert(e.submitAssignment.disabled);
+ f.connect(true);await e.refreshAssignments.onclick();e.assignmentPicker.value='a1';await e.assignmentPicker.onchange();assert(e.attachAssignment.disabled);assert(e.submitAssignment.disabled);assert.match(e.assignmentMessage.textContent,/Mod profesor/);
+ console.log('PASS V1.5 UI handlers: real HTML IDs, local/teacher/student controls, attach vs submit, stale snapshot guard, network uncertainty, refreshed submitted state, session isolation. (DOM fixture, not browser QA.)');
+})().catch(e=>{console.error(e);process.exitCode=1});

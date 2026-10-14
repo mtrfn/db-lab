@@ -12,7 +12,7 @@
  context=await host.ready;
  try{
   TeamsCore.id(cfg?.clientId);TeamsCore.id(cfg?.tenantId);
- }catch{status('Integrarea Microsoft nu este configurată încă. Administratorul trebuie să completeze microsoft-config.js folosind ghidul V1.3.');byId('connectMicrosoft').disabled=true;return}
+ }catch{status('Integrarea Microsoft nu este configurată încă. Administratorul trebuie să completeze microsoft-config.js folosind ghidul V1.5.');byId('connectMicrosoft').disabled=true;return}
  if(!context){status(host.error||'Contextul Teams nu este disponibil. Deschide aplicația într-o filă a clasei.');byId('connectMicrosoft').disabled=true;return}
  try{teamId=TeamsCore.id(context.team?.groupId)}catch{status('Deschide DB-Lab într-un canal al unei clase Teams. Această versiune nu folosește chat-uri sau canale partajate între organizații.');byId('connectMicrosoft').disabled=true;return}
  if(context.channel?.membershipType&&context.channel.membershipType!=='Regular'){status('Canalele private și partajate nu sunt suportate. Folosește un canal standard al clasei.');byId('connectMicrosoft').disabled=true;return}
@@ -23,16 +23,16 @@
  }catch{status('Componenta de autentificare nu a putut fi încărcată. Verifică accesul la serviciile Microsoft și reîncarcă fila.');return}
  status('Pregătit pentru conectare. Se vor verifica identitatea și apartenența la clasa curentă.');byId('connectMicrosoft').disabled=false;
  const scopes=['User.Read','EduRoster.ReadBasic','Files.Read.All'];
- async function token(){
+ async function token(requestedScopes=scopes){
   const account=pca.getAllAccounts().find(a=>a.tenantId?.toLowerCase()===cfg.tenantId.toLowerCase()&&a.localAccountId?.toLowerCase()===context.user?.id?.toLowerCase())||null;
   let result;
-  try{result=await pca.acquireTokenSilent({scopes,account})}catch(e){if(!(e instanceof msal.InteractionRequiredAuthError)&&account)throw Error('Autentificarea nu a reușit. Reconectează-te și verifică aprobarea administratorului.');result=await pca.acquireTokenPopup({scopes,loginHint:context.user?.loginHint})}
+  try{result=await pca.acquireTokenSilent({scopes:requestedScopes,account})}catch(e){if(!(e instanceof msal.InteractionRequiredAuthError)&&account)throw Error('Autentificarea nu a reușit. Reconectează-te și verifică aprobarea administratorului.');result=await pca.acquireTokenPopup({scopes:requestedScopes,loginHint:context.user?.loginHint})}
   return result;
  }
  async function connect(){
-  if(working)return;working=true;if(!(await DBLabLessons.prepareSwitch())){working=false;return}if(!(await DBLabWorkspace.flush())){status('Salvarea locală a eșuat. Exportă proiectul înainte de schimbarea sesiunii.');working=false;return}const request=++epoch;controller?.abort();controller=new AbortController();
+  if(working||window.DBLabAssignments?.isBusy)return;working=true;if(!(await DBLabLessons.prepareSwitch())){working=false;return}if(!(await DBLabWorkspace.flush())){status('Salvarea locală a eșuat. Exportă proiectul înainte de schimbarea sesiunii.');working=false;return}const request=++epoch;controller?.abort();controller=new AbortController();
   byId('connectMicrosoft').disabled=true;byId('refreshClassLessons').disabled=true;byId('closeMicrosoft').disabled=true;
-  locked(true);access(false);byId('microsoftAccount').textContent='';classNote.textContent='';
+  window.DBLabAssignments?.disconnect();locked(true);access(false);byId('microsoftAccount').textContent='';classNote.textContent='';
   let timer;
   try{
    await DBLabWorkspace.lock();await DBLabLessons.resetWorkspace();
@@ -48,6 +48,12 @@
    await DBLabWorkspace.open(TeamsCore.scope(user.tenantId,user.userId,teamId));
    await DBLabLessons.resetWorkspace();
    access(role.teacher);locked(false);
+   window.DBLabAssignments?.connect({...user,teamId,teacher:role.teacher,getToken:async()=>{
+    if(request!==epoch)throw Error('Sesiunea s-a schimbat. Reconectează-te.');
+    const result=await token(['User.Read','EduRoster.ReadBasic','EduAssignments.ReadWrite','Files.ReadWrite.All']);
+    if(request!==epoch||result.account?.tenantId?.toLowerCase()!==user.tenantId||result.account?.localAccountId?.toLowerCase()!==user.userId)throw Error('Contul Microsoft s-a schimbat. Reconectează-te.');
+    return result.accessToken;
+   }});
    byId('microsoftAccount').textContent=user.name+' · '+(role.teacher?'Profesor al clasei':'Elev / membru al clasei');
    byId('teamsClassName').textContent=role.name;
    status('Cont verificat. Proiectele se salvează local, separat pentru acest cont și această clasă.');
@@ -61,12 +67,12 @@
    }catch(e){if(request===epoch){DBLabLessons.clearClass();classNote.textContent=TeamsCore.message(e)}}
    byId('refreshClassLessons').disabled=false;byId('closeMicrosoft').disabled=false;
   }catch(e){
-   if(request===epoch){access(false);locked(true);DBLabLessons.clearClass();status(TeamsCore.message(e))}
+   if(request===epoch){window.DBLabAssignments?.disconnect();access(false);locked(true);DBLabLessons.clearClass();status(TeamsCore.message(e))}
   }finally{clearTimeout(timer);working=false;if(request===epoch)byId('connectMicrosoft').disabled=false}
  }
  byId('connectMicrosoft').onclick=connect;byId('refreshClassLessons').onclick=connect;
  byId('closeMicrosoft').onclick=async()=>{
-  if(working)return;working=true;if(!(await DBLabLessons.prepareSwitch())){working=false;return}if(!(await DBLabWorkspace.flush())){status('Salvarea locală a eșuat. Exportă proiectul înainte de schimbarea sesiunii.');working=false;return}epoch++;controller?.abort();locked(true);access(false);
+  if(working||window.DBLabAssignments?.isBusy)return;working=true;if(!(await DBLabLessons.prepareSwitch())){working=false;return}if(!(await DBLabWorkspace.flush())){status('Salvarea locală a eșuat. Exportă proiectul înainte de schimbarea sesiunii.');working=false;return}epoch++;controller?.abort();window.DBLabAssignments?.disconnect();locked(true);access(false);
   try{await DBLabWorkspace.lock();await DBLabLessons.resetWorkspace();pca.setActiveAccount?.(null);byId('microsoftAccount').textContent='';classNote.textContent='';status('Sesiunea DB-Lab este închisă. Contul Teams rămâne conectat. Lucrările locale sunt păstrate pentru acest cont.')}catch{status('Sesiunea a fost închisă. Reîncarcă fila înainte de următoarea conectare.')}
   finally{working=false;byId('refreshClassLessons').disabled=true;byId('closeMicrosoft').disabled=true}
  };
