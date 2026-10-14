@@ -1,3 +1,7 @@
+# DB-Lab V1.4.0
+
+Nou: fila Diagramă ERD. Pentru actualizare și limite citește ACTUALIZARE-V1.4.md.
+
 # DB-Lab V1.3.0 — Lecții SQL și atelier local
 
 ## Ce include
