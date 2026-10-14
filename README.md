@@ -1,4 +1,8 @@
-# DB-Lab V1.5.0
+# Corecție V1.5.1
+
+Confirmarea atașării și predării se afișează în DB-Lab. Citește ACTUALIZARE-V1.5.1.md.
+
+# DB-Lab V1.5.1
 
 Nou: fila Teme Teams — atașare proiect și predare cu confirmare Microsoft. Citește ACTUALIZARE-V1.5.md înainte de instalare: sunt necesare două permisiuni delegate suplimentare în Entra.
 

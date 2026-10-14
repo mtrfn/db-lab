@@ -4,6 +4,18 @@
  let session=null,api=null,working=false,controller=null,revision=0,assignments=[],detail=null;
  const stateNames={working:'În lucru · nepredată',submitted:'Predată',returned:'Returnată de profesor',reassigned:'Retrimisă pentru corectare',released:'Evaluată / publicată',excused:'Scutit',canceled:'Anulată'};
  function note(text){el('assignmentMessage').textContent=text}
+ function confirmAction(text,signal){
+  const dialog=el('assignmentConfirm');el('assignmentConfirmText').textContent=text;
+  note('Așteaptă confirmarea din fereastra deschisă în DB-Lab.');
+  return new Promise(resolve=>{
+   let settled=false;
+   const finish=value=>{if(settled)return;settled=true;signal?.removeEventListener('abort',abort);dialog.oncancel=null;dialog.onclose=null;el('assignmentConfirmYes').onclick=null;el('assignmentConfirmNo').onclick=null;if(dialog.open)dialog.close();if(!value)note('Operația a fost anulată. Nu s-a trimis proiectul sau predarea.');resolve(value)};
+   const abort=()=>finish(false);
+   el('assignmentConfirmYes').onclick=()=>finish(true);el('assignmentConfirmNo').onclick=()=>finish(false);
+   dialog.oncancel=event=>{event.preventDefault();finish(false)};dialog.onclose=()=>finish(false);
+   if(signal?.aborted){finish(false);return}signal?.addEventListener('abort',abort,{once:true});dialog.showModal();
+  });
+ }
  function controls(){const student=session&&!session.teacher;el('refreshAssignments').disabled=working||!session;el('assignmentPicker').disabled=working||!assignments.length;el('refreshSubmission').disabled=working||!student||!el('assignmentPicker').value;const can=student&&detail&&C.editable(detail.submission)&&detail.assignment.status==='assigned'&&(!detail.assignment.closeDateTime||Date.parse(detail.assignment.closeDateTime)>Date.now());el('attachAssignment').disabled=working||!can||!detail.assignment.allowStudentsToAddResourcesToSubmission;el('submitAssignment').disabled=working||!can||!C.projectResources(detail.resources).length;el('submitAssignment').textContent=detail?.submission.status==='submitted'?'✓ Tema este predată':'Predă tema';}
  function clearDetail(){detail=null;el('assignmentState').textContent='';el('assignmentDue').textContent='';el('assignmentFiles').replaceChildren();el('assignmentLink').hidden=true;controls()}
  function link(a){const target=el('assignmentLink');target.hidden=true;if(!a?.webUrl)return;try{const u=new URL(a.webUrl);if(u.protocol!=='https:')return;target.href=u.href;target.hidden=false}catch{}}
@@ -16,7 +28,7 @@
   const aid=el('assignmentPicker').value;
   // Capture synchronously before any network or authentication: this exact snapshot is uploaded.
   const project=DBLabWorkspace.snapshot();
-  if(!confirm('Atașezi proiectul „'+project.name+'” la tema „'+detail.assignment.displayName+'”? Include baza de date și textul SQL curent. SQL-ul nu se execută automat.'))return;
+  if(!(await confirmAction('Atașezi proiectul „'+project.name+'” la tema „'+detail.assignment.displayName+'”? Include baza de date și textul SQL curent. SQL-ul nu se execută automat.',signal)))return;
   note('Pregătesc și atașez proiectul…');const packet=await C.prepare(project);await C.attach(api,session.teamId,aid,session.userId,packet,signal);if(!valid())return;
   detail=await C.detail(api,session.teamId,aid,session.userId,signal);if(!valid())return;render();note('✓ Proiect atașat: „'+project.name+'”. Tema nu este încă predată. Apasă Predă tema. Dacă modifici proiectul, atașează noua versiune înainte de predare.');
  });
@@ -24,7 +36,7 @@
   const aid=el('assignmentPicker').value,packet=await C.prepare(DBLabWorkspace.snapshot());
   const matching=detail.resources.some(r=>r.resource?.displayName===packet.name);
   if(!matching){note('Proiectul curent diferă de atașamentele afișate. Apasă Atașează proiectul curent înainte de predare.');return}
-  if(!confirm('Predai tema „'+detail.assignment.displayName+'” profesorului? Se trimit toate atașamentele din lista afișată.'))return;
+  if(!(await confirmAction('Predai tema „'+detail.assignment.displayName+'” profesorului? Se trimit toate atașamentele din lista afișată.',signal)))return;
   note('Trimit tema către profesor…');const result=await C.submit(api,session.teamId,aid,session.userId,signal);if(!valid())return;detail.submission=result;render();note('✓ Lucrarea a fost predată! Starea este confirmată de Microsoft Teams. Modificările locale ulterioare nu schimbă lucrarea predată.');
  });
  window.DBLabAssignments={

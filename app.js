@@ -4,7 +4,7 @@ let activeLesson=null,workspaceScope=DBLabHost.embedded?null:'local';
 function storageKey(key,scope=workspaceScope){if(!scope)throw Error('Conectează-te înainte de a salva în Teams.');return scope==='local'?key:scope+'::'+key}
 let worker,state=[],bytes,selected='',pending=null,serial=0,storage,saveQueue=Promise.resolve(),timer;
 function msg(s){$('message').textContent=s}
-function spawn(){worker=new Worker('./worker.js?v=1.5.0');worker.onmessage=e=>{if(!pending||pending.id!==e.data.id)return;const p=pending;pending=null;clearTimeout(timer);busy(false);e.data.error?p.reject(Error(e.data.error)):p.resolve(e.data)};worker.onerror=e=>{if(pending){clearTimeout(timer);pending.reject(Error(e.message));pending=null;busy(false)}}}
+function spawn(){worker=new Worker('./worker.js?v=1.5.1');worker.onmessage=e=>{if(!pending||pending.id!==e.data.id)return;const p=pending;pending=null;clearTimeout(timer);busy(false);e.data.error?p.reject(Error(e.data.error)):p.resolve(e.data)};worker.onerror=e=>{if(pending){clearTimeout(timer);pending.reject(Error(e.message));pending=null;busy(false)}}}
 let busyDepth=0;
 function refreshBusyButtons(){if(!busyDepth)return;document.querySelectorAll('button,input,select,textarea').forEach(x=>{if(x.id==='stop')return;if(x.dataset.wasDisabled===undefined)x.dataset.wasDisabled=String(x.disabled);x.disabled=true})}
 function busy(b){busyDepth=Math.max(0,busyDepth+(b?1:-1));if(busyDepth){refreshBusyButtons();return}document.querySelectorAll('button,input,select,textarea').forEach(x=>{if(x.dataset.wasDisabled!==undefined){x.disabled=x.dataset.wasDisabled==='true';delete x.dataset.wasDisabled}})}
