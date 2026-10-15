@@ -65,7 +65,7 @@
   async function activate(project){
     const p=LessonCore.project(project);
     await load(new Uint8Array(p.bytes));
-    activeLesson=p.lesson;$('name').value=p.name;$('editor').value=p.sql;$('results').replaceChildren();
+    window.DBLabDesigner?.restore(p.design);activeLesson=p.lesson;$('name').value=p.name;$('editor').value=p.sql;$('results').replaceChildren();
     renderActive();
     if(!(await save()))throw Error('Lucrarea este deschisă, dar nu a putut fi salvată local. Folosește Export proiect.');
   }

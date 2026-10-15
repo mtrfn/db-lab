@@ -1,3 +1,9 @@
+# DB-Lab V1.6.0 — Proiectare ERD
+
+Editor grafic de scheme: tabele, câmpuri, relații, asistent N:M, SQL generat și creare controlată a unei baze noi. Diagrama și pozițiile se salvează în proiect și se transmit la predarea în Teams.
+
+Instalare și ghid: **ACTUALIZARE-V1.6.md**. Nu necesită permisiuni Microsoft suplimentare față de V1.5.1.
+
 # Corecție V1.5.1
 
 Confirmarea atașării și predării se afișează în DB-Lab. Citește ACTUALIZARE-V1.5.1.md.

@@ -1,0 +1,113 @@
+{
+  "format": "DB-Lab-design",
+  "version": 1,
+  "tables": [
+    {
+      "id": "951399bc-3499-41d3-8f8f-30d8ea76fcf2",
+      "name": "autori",
+      "x": 40,
+      "y": 40,
+      "columns": [
+        {
+          "id": "e0710295-dc16-4387-8ac5-70dcfb0ada01",
+          "name": "id",
+          "type": "INTEGER",
+          "pk": true,
+          "required": true,
+          "unique": false
+        },
+        {
+          "id": "5fdd18ba-fdaf-4795-aada-0f75d24671b3",
+          "name": "nume",
+          "type": "TEXT",
+          "pk": false,
+          "required": true,
+          "unique": false
+        }
+      ],
+      "uniques": []
+    },
+    {
+      "id": "d8757e79-e878-41ce-98b4-d437ec659758",
+      "name": "carti",
+      "x": 380,
+      "y": 40,
+      "columns": [
+        {
+          "id": "c9089e1e-88d3-4907-a87d-756a89b03b6f",
+          "name": "id",
+          "type": "INTEGER",
+          "pk": true,
+          "required": true,
+          "unique": false
+        },
+        {
+          "id": "7f6888a8-cac5-4d58-a4ad-f3a3488f872a",
+          "name": "titlu",
+          "type": "TEXT",
+          "pk": false,
+          "required": true,
+          "unique": false
+        },
+        {
+          "id": "420f48f6-a555-406e-80d5-96229b73d67d",
+          "name": "an_publicare",
+          "type": "INTEGER",
+          "pk": false,
+          "required": false,
+          "unique": false
+        }
+      ],
+      "uniques": []
+    },
+    {
+      "id": "377a43ea-440a-4460-9098-98caaaf203c2",
+      "name": "autori_carti",
+      "x": 210,
+      "y": 320,
+      "columns": [
+        {
+          "id": "699ade17-c90a-473e-909c-05ef6a7430c3",
+          "name": "autor_id",
+          "type": "INTEGER",
+          "pk": true,
+          "required": true,
+          "unique": false
+        },
+        {
+          "id": "0015b48d-2a96-4f29-99a9-9b3b91b2b168",
+          "name": "carte_id",
+          "type": "INTEGER",
+          "pk": true,
+          "required": true,
+          "unique": false
+        }
+      ],
+      "uniques": []
+    }
+  ],
+  "relations": [
+    {
+      "id": "ea6beaf9-b733-41f6-bd6e-3f8c09c7890a",
+      "child": "377a43ea-440a-4460-9098-98caaaf203c2",
+      "parent": "951399bc-3499-41d3-8f8f-30d8ea76fcf2",
+      "from": [
+        "699ade17-c90a-473e-909c-05ef6a7430c3"
+      ],
+      "to": [
+        "e0710295-dc16-4387-8ac5-70dcfb0ada01"
+      ]
+    },
+    {
+      "id": "31143e84-8aba-429c-95b8-6776e1ce77f3",
+      "child": "377a43ea-440a-4460-9098-98caaaf203c2",
+      "parent": "d8757e79-e878-41ce-98b4-d437ec659758",
+      "from": [
+        "0015b48d-2a96-4f29-99a9-9b3b91b2b168"
+      ],
+      "to": [
+        "c9089e1e-88d3-4907-a87d-756a89b03b6f"
+      ]
+    }
+  ]
+}

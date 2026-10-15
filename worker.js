@@ -3,7 +3,7 @@ let SQL,db;
 const ready=initSqlJs({locateFile:f=>'./vendor/'+f}).then(s=>SQL=s);
 const quote=x=>'"'+String(x).replaceAll('"','""')+'"';
 function rows(sql,target=db){const r=target.exec(sql)[0];return r?r.values.map(v=>Object.fromEntries(r.columns.map((k,i)=>[k,v[i]]))):[]}
-function snapshot(target=db){return rows("SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name",target).map(t=>({name:t.name,columns:rows('PRAGMA table_xinfo('+quote(t.name)+')',target),foreign:rows('PRAGMA foreign_key_list('+quote(t.name)+')',target),data:target.exec('SELECT * FROM '+quote(t.name)+' LIMIT 200')[0]||{columns:[],values:[]}}))}
+function snapshot(target=db){return rows("SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name",target).map(t=>({name:t.name,columns:rows('PRAGMA table_xinfo('+quote(t.name)+')',target),foreign:rows('PRAGMA foreign_key_list('+quote(t.name)+')',target),uniqueKeys:rows('PRAGMA index_list('+quote(t.name)+')',target).filter(i=>i.unique&&!i.partial&&i.origin!=='pk').map(i=>rows('PRAGMA index_info('+quote(i.name)+')',target).sort((a,b)=>a.seqno-b.seqno).map(c=>c.name)).filter(k=>k.length&&k.every(x=>typeof x==='string')),data:target.exec('SELECT * FROM '+quote(t.name)+' LIMIT 200')[0]||{columns:[],values:[]}}))}
 onmessage=async e=>{let old;try{await ready;const m=e.data;
 if(m.kind==='lessonPreview'){
  const candidate=new SQL.Database();

@@ -29,7 +29,7 @@ const LessonCore = (() => {
   }
   function project(x){
     if(!object(x)||x.version!==1||!Array.isArray(x.bytes)||!x.bytes.every(b=>Number.isInteger(b)&&b>=0&&b<=255)||typeof x.name!=='string'||typeof x.sql!=='string')throw Error('Proiect DB-Lab invalid.');
-    return {version:1,name:x.name,sql:x.sql,bytes:x.bytes,lesson:metadata(x.lesson)};
+    return {version:1,name:x.name,sql:x.sql,bytes:x.bytes,lesson:metadata(x.lesson),design:x.design==null?null:(typeof DesignCore!=='undefined'?DesignCore:require('./design-core.js')).parse(x.design)};
   }
   function merge(existing,incoming){
     const map=new Map(library(existing).lessons.map(l=>[l.id,l]));
